@@ -14,18 +14,21 @@ from scipy.linalg import expm, norm
 from torch import Tensor
 from torchvision import transforms
 
-#------- new ------
-# pip install nltk
-# pip intall transformers
 from transformers import BertTokenizer
 import re
 import string
+import nltk
 from nltk.corpus import stopwords
 
+import warnings
+warnings.filterwarnings('ignore')
+
+
 class DefaultTextTransform:
-    def __init__(self) -> None:
+    def __init__(self, max_length = 250) -> None:
+        nltk.download('stopwords')
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        
+        self.max_length = max_length
 
     def __call__(self, txt) -> Tensor:
         """Applies transformations to the given image.
@@ -39,27 +42,27 @@ class DefaultTextTransform:
         tokenized = self.tokenizer.encode_plus(self.del_stopword(self.clear_text(txt)),
                                                                     add_special_tokens=True,
                                                                     pad_to_max_length=True,
-                                                                    max_length = 250,  # maximum length of a sentence
+                                                                    max_length = self.max_length,  # maximum length of a sentence
                                                                     truncation=True)
 #         padded = np.array([i['input_ids'] for i in tokenized.values])
         # attention_mask = np.array([i['attention_mask'] for i in tokenized.values])
         input_ids = torch.tensor(tokenized['input_ids'])  
         return input_ids
     
-    def clear_text(self, txt_one_str):
-        txt = str(txt_one_str).lower()
-        txt = re.sub('[a-zA-Z0-9 ]+\\?', '', txt_one_str)
-        txt = re.sub('description?:?', '', txt_one_str)
-        txt = re.sub('[^A-Za-z0-9.]+', ' ', txt_one_str)
-        txt = re.sub(' q ', '', txt_one_str)
-        txt = re.sub(' a ', '', txt_one_str)
-        txt = re.sub('describe the scene', '', txt_one_str)
-        txt = re.sub('the answer is', '', txt_one_str)
-        txt = re.sub('the next question is', '', txt_one_str)
-        txt = re.sub('\d', '', txt_one_str)
-        txt = txt.translate(str.maketrans('', '', string.punctuation)) #пунктуация
+    def clear_text(self, text):
+        text = str(text).lower()
+        text = re.sub('[a-zA-Z0-9 ]+\\?', '', text)
+        text = re.sub('description?:?', '', text)
+        text = re.sub('[^A-Za-z0-9.]+', ' ', text)
+        text = re.sub(' q ', '', text)
+        text = re.sub(' a ', '', text)
+        text = re.sub('describe the scene', '', text)
+        text = re.sub('the answer is', '', text)
+        text = re.sub('the next question is', '', text)
+        text = re.sub('\d', '', text)
+        text = text.translate(str.maketrans('', '', string.punctuation)) #пунктуация
       
-        return txt
+        return text
     
     def del_stopword(self, txt):
         #import english stopwords list from nltk

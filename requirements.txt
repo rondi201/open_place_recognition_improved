@@ -6,3 +6,7 @@ pandas
 pytorch_metric_learning
 scipy
 tqdm
+
+# NLP
+transformers
+nltk

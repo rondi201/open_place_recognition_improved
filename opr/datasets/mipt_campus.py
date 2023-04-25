@@ -11,6 +11,7 @@ from opr.datasets.augmentations import (
     DefaultCloudTransform,
     DefaultImageTransform,
     DefaultMaskTransform,
+    DefaultTextTransform,
 )
 from opr.datasets.base import BaseDataset
 
@@ -64,9 +65,9 @@ class MIPTCampusDataset(BaseDataset):
 
         self.image_transform = DefaultImageTransform(train=(self.subset == "train"))
         self.cloud_transform = DefaultCloudTransform(train=(self.subset == "train"))
-        # self.cloud_set_transform = DefaultCloudSetTransform(train=(self.subset == "train"))
+        self.cloud_set_transform = DefaultCloudSetTransform(train=(self.subset == "train"))
         self.mask_transform = DefaultMaskTransform()
-        self.text_transform = lambda text: text
+        self.text_transform = DefaultTextTransform()
 
 
     def __getitem__(self, idx: int) -> Dict[str, Union[int, Tensor]]:  # noqa: D105
@@ -94,7 +95,7 @@ class MIPTCampusDataset(BaseDataset):
             for cam in self.cam_types:
                 im_filepath = track_dir / self.mask_subdir / self.images_subdir[cam] / f"{row[f'{cam}_cam_ts']}.png"
                 im = cv2.imread(str(im_filepath))
-                # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+                im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
                 im = self.mask_transform(im)
                 data[f"{cam}_mask"] = im
         if "text" in self.modalities:
