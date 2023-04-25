@@ -15,6 +15,36 @@ from torch import Tensor
 from torchvision import transforms
 
 
+class DefaultMaskTransform:
+    """Default image augmentation pipeline."""
+
+    def __init__(self, train: bool = False, resize: Optional[Tuple[int, int]] = None) -> None:
+        """Default image augmentation pipeline.
+
+        Args:
+            train (bool): If not train, only normalization will be applied. Defaults to False.
+            resize (Tuple[int, int], optional): Target size in (W, H) format. Defaults to None.
+        """
+        transform_list = [
+            ToTensorV2(),
+        ]
+
+        if resize is not None:
+            transform_list = [A.Resize(height=resize[1], width=resize[0])] + transform_list
+
+        self.transform = A.Compose(transform_list)
+
+    def __call__(self, img: np.ndarray) -> Tensor:
+        """Applies transformations to the given image.
+
+        Args:
+            img (np.ndarray): The image in the cv2 format.
+
+        Returns:
+            Tensor: Augmented PyTorch tensor in the channel-first format.
+        """
+        return self.transform(image=img)["image"]
+
 class DefaultImageTransform:
     """Default image augmentation pipeline."""
 
@@ -318,10 +348,10 @@ class RemoveRandomBlock:
         if random.random() < self.p:
             x, y, w, h = self.get_params(coords)  # Fronto-parallel cuboid to remove
             mask = (
-                (x < coords[..., 0])
-                & (coords[..., 0] < x + w)
-                & (y < coords[..., 1])
-                & (coords[..., 1] < y + h)
+                    (x < coords[..., 0])
+                    & (coords[..., 0] < x + w)
+                    & (y < coords[..., 1])
+                    & (coords[..., 1] < y + h)
             )
             coords[mask] = torch.zeros_like(coords[mask])
         return coords
