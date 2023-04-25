@@ -14,18 +14,21 @@ from scipy.linalg import expm, norm
 from torch import Tensor
 from torchvision import transforms
 
-#------- new ------
-# pip install nltk
-# pip intall transformers
 from transformers import BertTokenizer
 import re
 import string
+import nltk
 from nltk.corpus import stopwords
 
+import warnings
+warnings.filterwarnings('ignore')
+
+
 class DefaultTextTransform:
-    def __init__(self) -> None:
+    def __init__(self, max_length = 250) -> None:
+        nltk.download('stopwords')
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        
+        self.max_length = max_length
 
     def __call__(self, txt) -> Tensor:
         """Applies transformations to the given image.
@@ -39,27 +42,27 @@ class DefaultTextTransform:
         tokenized = self.tokenizer.encode_plus(self.del_stopword(self.clear_text(txt)),
                                                                     add_special_tokens=True,
                                                                     pad_to_max_length=True,
-                                                                    max_length = 250,  # maximum length of a sentence
+                                                                    max_length = self.max_length,  # maximum length of a sentence
                                                                     truncation=True)
 #         padded = np.array([i['input_ids'] for i in tokenized.values])
         # attention_mask = np.array([i['attention_mask'] for i in tokenized.values])
         input_ids = torch.tensor(tokenized['input_ids'])  
         return input_ids
     
-    def clear_text(self, txt_one_str):
-        txt = str(txt_one_str).lower()
-        txt = re.sub('[a-zA-Z0-9 ]+\\?', '', txt_one_str)
-        txt = re.sub('description?:?', '', txt_one_str)
-        txt = re.sub('[^A-Za-z0-9.]+', ' ', txt_one_str)
-        txt = re.sub(' q ', '', txt_one_str)
-        txt = re.sub(' a ', '', txt_one_str)
-        txt = re.sub('describe the scene', '', txt_one_str)
-        txt = re.sub('the answer is', '', txt_one_str)
-        txt = re.sub('the next question is', '', txt_one_str)
-        txt = re.sub('\d', '', txt_one_str)
-        txt = txt.translate(str.maketrans('', '', string.punctuation)) #пунктуация
+    def clear_text(self, text):
+        text = str(text).lower()
+        text = re.sub('[a-zA-Z0-9 ]+\\?', '', text)
+        text = re.sub('description?:?', '', text)
+        text = re.sub('[^A-Za-z0-9.]+', ' ', text)
+        text = re.sub(' q ', '', text)
+        text = re.sub(' a ', '', text)
+        text = re.sub('describe the scene', '', text)
+        text = re.sub('the answer is', '', text)
+        text = re.sub('the next question is', '', text)
+        text = re.sub('\d', '', text)
+        text = text.translate(str.maketrans('', '', string.punctuation)) #пунктуация
       
-        return txt
+        return text
     
     def del_stopword(self, txt):
         #import english stopwords list from nltk
@@ -75,6 +78,36 @@ class DefaultTextTransform:
         return txt
     
 # -----new-----
+
+class DefaultMaskTransform:
+    """Default image augmentation pipeline."""
+
+    def __init__(self, train: bool = False, resize: Optional[Tuple[int, int]] = None) -> None:
+        """Default image augmentation pipeline.
+
+        Args:
+            train (bool): If not train, only normalization will be applied. Defaults to False.
+            resize (Tuple[int, int], optional): Target size in (W, H) format. Defaults to None.
+        """
+        transform_list = [
+            ToTensorV2(),
+        ]
+
+        if resize is not None:
+            transform_list = [A.Resize(height=resize[1], width=resize[0])] + transform_list
+
+        self.transform = A.Compose(transform_list)
+
+    def __call__(self, img: np.ndarray) -> Tensor:
+        """Applies transformations to the given image.
+
+        Args:
+            img (np.ndarray): The image in the cv2 format.
+
+        Returns:
+            Tensor: Augmented PyTorch tensor in the channel-first format.
+        """
+        return self.transform(image=img)["image"]
 
 class DefaultImageTransform:
     """Default image augmentation pipeline."""
@@ -379,10 +412,10 @@ class RemoveRandomBlock:
         if random.random() < self.p:
             x, y, w, h = self.get_params(coords)  # Fronto-parallel cuboid to remove
             mask = (
-                (x < coords[..., 0])
-                & (coords[..., 0] < x + w)
-                & (y < coords[..., 1])
-                & (coords[..., 1] < y + h)
+                    (x < coords[..., 0])
+                    & (coords[..., 0] < x + w)
+                    & (y < coords[..., 1])
+                    & (coords[..., 1] < y + h)
             )
             coords[mask] = torch.zeros_like(coords[mask])
         return coords
