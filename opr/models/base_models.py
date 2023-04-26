@@ -261,7 +261,7 @@ class ComposedImprovedModel(nn.Module):
         task_keys = [key for key in batch.keys() if task in key]
         if len(task_keys) == 0:
             return None
-        task_data = [batch[key] for key in task_key]
+        task_data = [batch[key] for key in task_keys]
         task_vectors = []
         for task_batch in task_data:
             if self.task2model[task] is None:
