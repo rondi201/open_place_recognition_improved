@@ -103,6 +103,8 @@ def make_dataloaders(
     Returns:
         Dict[str, DataLoader]: Dictionary with DataLoaders.
     """
+    print('make_dataloaders')
+    
     dataset = {}
     for subset in ["train", "val", "test"]:
         dataset[subset] = instantiate(dataset_cfg, subset=subset)
