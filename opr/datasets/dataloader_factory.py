@@ -1,7 +1,7 @@
 """Functions to create PyTorch DataLoaders for different datasets."""
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
-# import MinkowskiEngine as ME  # noqa: N817
+import MinkowskiEngine as ME  # noqa: N817
 import torch
 from torch.utils.data import default_collate
 from hydra.utils import instantiate
@@ -45,6 +45,7 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
 
         if "cloud" in data_list[0]:
             cloud_prepare = True
+            print(cloud_prepare)
             clouds: Union[Tensor, List[Tensor]] = [e["cloud"] for e in data_list]
             n_points = [int(e.shape[0]) for e in clouds]
             clouds = torch.cat(list(clouds), dim=0).unsqueeze(0)  # (1, batch_size*n_points, 3) tensor
@@ -62,6 +63,7 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
             no_prepared_items = [{key: value for key, value in data.items() if key not in prepared_keys} for data in data_list]
             result = default_collate(no_prepared_items) if len(no_prepared_items[0]) > 0 else {}
             if cloud_prepare:
+                print('add coordinates and features')
                 result["coordinates"] = ME.utils.batched_coordinates(quantized_coords)
                 result["features"] = torch.ones((result["coordinates"].shape[0], 1), dtype=torch.float32)
         else:  # split the batch into chunks
