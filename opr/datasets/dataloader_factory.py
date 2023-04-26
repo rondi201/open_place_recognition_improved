@@ -52,18 +52,18 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
                 # Apply the same transformation on all dataset elements
                 clouds = dataset.cloud_set_transform(clouds)
             clouds = torch.split(clouds.squeeze(0), split_size_or_sections=n_points, dim=0)  # back to list
-            # quantized_coords = [
-            #     ME.utils.sparse_quantize(coordinates=e, quantization_size=dataset.mink_quantization_size)
-            #     for e in clouds
-            # ]
+            quantized_coords = [
+                ME.utils.sparse_quantize(coordinates=e, quantization_size=dataset.mink_quantization_size)
+                for e in clouds
+            ]
         result: Union[List[Dict[str, Tensor]], Dict[str, Tensor]]
 
         if batch_split_size is None or batch_split_size == 0:
             no_prepared_items = [{key: value for key, value in data.items() if key not in prepared_keys} for data in data_list]
             result = default_collate(no_prepared_items) if len(no_prepared_items[0]) > 0 else {}
-            # if cloud_prepare:
-                # result["coordinates"] = ME.utils.batched_coordinates(quantized_coords)
-                # result["features"] = torch.ones((result["coordinates"].shape[0], 1), dtype=torch.float32)
+            if cloud_prepare:
+                result["coordinates"] = ME.utils.batched_coordinates(quantized_coords)
+                result["features"] = torch.ones((result["coordinates"].shape[0], 1), dtype=torch.float32)
         else:  # split the batch into chunks
             raise NotImplementedError("Multistaged batch training not yet implemented")
 
