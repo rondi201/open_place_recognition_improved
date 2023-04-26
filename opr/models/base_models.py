@@ -2,30 +2,29 @@
 from typing import Dict, Optional, Union
 
 import MinkowskiEngine as ME  # noqa: N817
+import torch
 from torch import Tensor, nn
 
 # ----new ----
 from transformers import BertModel
 
-class TextModel(nn.Module):
-    def __init__(self):
+class TextModule(nn.Module):
+    def __init__(self, out_channels=256):
         """Interface class for image feature extractor module."""
         super().__init__()
-        self.model_bert = BertModel.from_pretrained('bert-base-uncased')
-        self.fc1 = nn.Linear(250, 128)
-        self.bn = nn.BatchNorm1d(128)
+        self.encoder = BertModel.from_pretrained('bert-base-uncased')
+        self.head = nn.Sequential(nn.Linear(self.encoder.hidden_size, out_channels),
+                                  nn.BatchNorm1d(out_channels),
+                                  )
     
     def forward(self, token):
         x = token
         if len(x.shape) == 1:
             x = x.unsqueeze(0)
         x = self.model_bert(x)[0][:,0,:]
-        x = self.fc1(x)
-        x = self.bn(x)
+        x = self.head(x)
 
         return x
-
-# ----new ----
 
 
 class ImageFeatureExtractor(nn.Module):
@@ -194,3 +193,82 @@ class ComposedModel(nn.Module):
             out_dict["fusion"] = self.fusion_module(out_dict)
 
         return out_dict
+
+class ComposedImprovedModel(nn.Module):
+    """Composition model for multimodal architectures."""
+
+    sparse_cloud: Optional[bool] = None
+
+    def __init__(
+        self,
+        image_module: Optional[ImageModule] = None,
+        cloud_module: Optional[CloudModule] = None,
+        text_module: Optional[TextModule] = None,
+        fusion_module: Optional[FusionModule] = None,
+    ) -> None:
+        """Composition model for multimodal architectures.
+
+        Args:
+            image_module (ImageModule, optional): Image modality branch. Defaults to None.
+            cloud_module (CloudModule, optional): Cloud modality branch. Defaults to None.
+            fusion_module (FusionModule, optional): Module to fuse different modalities. Defaults to None.
+        """
+        super().__init__()
+
+        self.image_module = image_module
+        self.cloud_module = cloud_module
+        self.text_module = text_module
+        self.fusion_module = fusion_module
+        if self.cloud_module:
+            self.sparse_cloud = self.cloud_module.sparse
+
+        self.task2model = {
+            "image": self.image_module,
+            "cloud": self.cloud_module,
+            "text": self.text_module,
+        }
+
+    def forward(self, batch: Dict[str, Tensor]) -> Dict[str, Optional[Tensor]]:  # noqa: D102
+        out_dict: Dict[str, Optional[Tensor]] = {
+            "image": None,
+            "cloud": None,
+            "text": None,
+            "fusion": None,
+        }
+        special_task = []
+
+        if self.cloud_module is not None:
+            special_task.append("cloud")
+            if self.sparse_cloud:
+                cloud = ME.SparseTensor(features=batch["features"], coordinates=batch["coordinates"])
+            else:
+                raise NotImplementedError("Currently we support only sparse cloud modules.")
+            out_dict["cloud"] = self.cloud_module(cloud)
+
+        for task in self.task2model.keys():
+            if task in special_task or self.task2model[task] is not None:
+                continue
+            res = self._grouped_task_forward(batch, task)
+            if res is not None:
+                out_dict[task] = res
+
+        if self.fusion_module is not None:
+            out_dict["fusion"] = self.fusion_module(out_dict)
+
+        return out_dict
+
+    def _grouped_task_forward(self, batch: Dict[str, Tensor], task: str):
+        task_keys = [key for key in batch.keys() if task in key]
+        if len(task_keys) == 0:
+            return None
+        task_data = [batch[key] for key in task_key]
+        task_vectors = []
+        for task_batch in task_data:
+            if self.task2model[task] is None:
+                return None
+            vector = self.task2model[task](task_batch)
+            task_vectors.append(vector)
+        if len(task_vectors) > 1:
+            return torch.stack(task_vectors, dim=1)
+        else:
+            return task_vectors[0].unsqeeze(1)
