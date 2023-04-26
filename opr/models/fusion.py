@@ -20,6 +20,8 @@ class Concat(FusionModule):
         assert "cloud" in data
         concat_data = []
         for key, value in data.items():
+            if value is None:
+                continue
             if "cloud" in key:
                 concat_data.append(value)
                 continue
