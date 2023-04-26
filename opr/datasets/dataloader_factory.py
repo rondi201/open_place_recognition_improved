@@ -41,14 +41,9 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
         """
         prepared_keys = ["cloud"]
         cloud_prepare = False
-        raise ValueError()
-
-        print("collate_fn")
-        print(data_list[0].keys())
 
         if "cloud" in data_list[0]:
             cloud_prepare = True
-            print("cloud_prepare")
             clouds: Union[Tensor, List[Tensor]] = [e["cloud"] for e in data_list]
             n_points = [int(e.shape[0]) for e in clouds]
             clouds = torch.cat(list(clouds), dim=0).unsqueeze(0)  # (1, batch_size*n_points, 3) tensor
@@ -66,7 +61,6 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
             no_prepared_items = [{key: value for key, value in data.items() if key not in prepared_keys} for data in data_list]
             result = default_collate(no_prepared_items) if len(no_prepared_items[0]) > 0 else {}
             if cloud_prepare:
-                print('add coordinates and features')
                 result["coordinates"] = ME.utils.batched_coordinates(quantized_coords)
                 result["features"] = torch.ones((result["coordinates"].shape[0], 1), dtype=torch.float32)
         else:  # split the batch into chunks
@@ -81,8 +75,7 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
         ]
         positives_mask = torch.tensor(positives_mask_list)
         negatives_mask = torch.tensor(negatives_mask_list)
-        # return result, positives_mask, negatives_mask
-        return None
+        return result, positives_mask, negatives_mask
 
     return collate_fn
 
@@ -102,7 +95,6 @@ def make_dataloaders(
     Returns:
         Dict[str, DataLoader]: Dictionary with DataLoaders.
     """
-    raise ValueError()
     dataset = {}
     for subset in ["train", "val", "test"]:
         dataset[subset] = instantiate(dataset_cfg, subset=subset)
