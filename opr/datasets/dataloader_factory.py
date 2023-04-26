@@ -42,7 +42,7 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
         prepared_keys = ["cloud"]
         cloud_prepare = False
         raise ValueError()
-        
+
         print("collate_fn")
         print(data_list[0].keys())
 
@@ -102,6 +102,7 @@ def make_dataloaders(
     Returns:
         Dict[str, DataLoader]: Dictionary with DataLoaders.
     """
+    raise ValueError()
     dataset = {}
     for subset in ["train", "val", "test"]:
         dataset[subset] = instantiate(dataset_cfg, subset=subset)
