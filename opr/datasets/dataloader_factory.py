@@ -41,7 +41,8 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
         """
         prepared_keys = ["cloud"]
         cloud_prepare = False
-
+        raise ValueError()
+        
         print("collate_fn")
         print(data_list[0].keys())
 
