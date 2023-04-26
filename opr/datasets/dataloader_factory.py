@@ -43,9 +43,11 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
         prepared_keys = ["cloud"]
         cloud_prepare = False
 
+        print(data_list[0].keys())
+
         if "cloud" in data_list[0]:
             cloud_prepare = True
-            print(cloud_prepare)
+            print("cloud_prepare")
             clouds: Union[Tensor, List[Tensor]] = [e["cloud"] for e in data_list]
             n_points = [int(e.shape[0]) for e in clouds]
             clouds = torch.cat(list(clouds), dim=0).unsqueeze(0)  # (1, batch_size*n_points, 3) tensor
