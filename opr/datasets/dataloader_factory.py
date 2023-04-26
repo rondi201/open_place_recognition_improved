@@ -82,7 +82,8 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
         ]
         positives_mask = torch.tensor(positives_mask_list)
         negatives_mask = torch.tensor(negatives_mask_list)
-        return result, positives_mask, negatives_mask
+        # return result, positives_mask, negatives_mask
+        return
 
     return collate_fn
 
