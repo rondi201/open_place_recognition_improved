@@ -24,8 +24,6 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
     Returns:
         Callable: collate_fn function that takes data_list and returns batch.
     """
-    print("make_collate_fn")
-
     def collate_fn(
         data_list: List[Dict[str, Tensor]]
     ) -> Tuple[Union[List[Dict[str, Tensor]], Dict[str, Tensor]], Tensor, Tensor]:
@@ -83,7 +81,7 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
         positives_mask = torch.tensor(positives_mask_list)
         negatives_mask = torch.tensor(negatives_mask_list)
         # return result, positives_mask, negatives_mask
-        return
+        return None
 
     return collate_fn
 
@@ -103,8 +101,6 @@ def make_dataloaders(
     Returns:
         Dict[str, DataLoader]: Dictionary with DataLoaders.
     """
-    print('make_dataloaders')
-    
     dataset = {}
     for subset in ["train", "val", "test"]:
         dataset[subset] = instantiate(dataset_cfg, subset=subset)
