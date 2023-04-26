@@ -24,6 +24,7 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
     Returns:
         Callable: collate_fn function that takes data_list and returns batch.
     """
+    print("make_collate_fn")
 
     def collate_fn(
         data_list: List[Dict[str, Tensor]]
@@ -43,6 +44,7 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
         prepared_keys = ["cloud"]
         cloud_prepare = False
 
+        print("collate_fn")
         print(data_list[0].keys())
 
         if "cloud" in data_list[0]:
