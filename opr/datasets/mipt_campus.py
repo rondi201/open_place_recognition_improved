@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Dict, Literal, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
+from typing_extensions import Literal
 
 import cv2
 import numpy as np
